@@ -96,13 +96,14 @@ mod erc20 {
 
         #[ink(message)]
         pub fn transfer_from(&mut self, from: AccountId, to: AccountId, value: Balance) -> bool {
-            let allowance = self.allowance_of_or_zero(&from, &to);
+            let caller = self.env().caller();
+            let allowance = self.allowance_of_or_zero(&from, &caller);
             if allowance < value {
                 return false
             }
 
             if self.transfer_from_to(from, to, value){
-                self.allowances.insert((from, to), allowance - value);
+                self.allowances.insert((from, caller), allowance - value);
             }
             true
             // ACTION: Get the allowance for `(from, self.env().caller())` using `allowance_of_or_zero`
@@ -181,7 +182,7 @@ mod erc20 {
         fn transfer_from_works() {
             let mut contract = Erc20::new(100);
             assert_eq!(contract.balance_of(AccountId::from([0x1; 32])), 100);
-            contract.approve(AccountId::from([0x0; 32]), 20);
+            contract.approve(AccountId::from([0x1; 32]), 20);
             contract.transfer_from(AccountId::from([0x1; 32]), AccountId::from([0x0; 32]), 10);
             assert_eq!(contract.balance_of(AccountId::from([0x0; 32])), 10);
         }
